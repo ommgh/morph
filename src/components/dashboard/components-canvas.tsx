@@ -1,5 +1,6 @@
 "use client";
 
+import { AddBlockModal } from "@/components/dashboard/add-block-modal";
 import { CanvasComponent, useCanvasStore } from "@/lib/canvas-storage";
 import { components } from "@/lib/tambo";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ import {
   PlusIcon,
   TrashIcon,
   XIcon,
+  SquarePlus,
 } from "lucide-react";
 import * as React from "react";
 
@@ -52,6 +54,7 @@ export const ComponentsCanvas: React.FC<
     string | null
   >(null);
   const [editingName, setEditingName] = React.useState("");
+  const [isAddBlockModalOpen, setIsAddBlockModalOpen] = React.useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -397,18 +400,33 @@ export const ComponentsCanvas: React.FC<
         </button>
       </div>
 
-      <div className="absolute bottom-4 right-4 z-50 bg-background rounded-md">
+      <div className="absolute bottom-4 right-4 z-50 flex gap-2">
         {activeCanvasId && (
-          <button
-            onClick={() => activeCanvasId && clearCanvas(activeCanvasId)}
-            className="px-3 py-1.5 border border-gray-200 text-primary hover:text-gray-200 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 rounded-md shadow-sm flex items-center gap-1.5 text-sm cursor-pointer"
-            title="Clear canvas"
-          >
-            <XIcon className="h-4 w-4" />
-            <span>Clear Canvas</span>
-          </button>
+          <>
+            <button
+              onClick={() => setIsAddBlockModalOpen(true)}
+              className="px-3 py-1.5 border border-gray-200 text-primary hover:text-gray-200 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 rounded-md shadow-sm flex items-center gap-1.5 text-sm cursor-pointer bg-background"
+              title="Add block from API"
+            >
+              <SquarePlus className="h-4 w-4" />
+              <span>Add Block</span>
+            </button>
+            <button
+              onClick={() => activeCanvasId && clearCanvas(activeCanvasId)}
+              className="px-3 py-1.5 border border-gray-200 text-primary hover:text-gray-200 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 rounded-md shadow-sm flex items-center gap-1.5 text-sm cursor-pointer bg-background"
+              title="Clear canvas"
+            >
+              <XIcon className="h-4 w-4" />
+              <span>Clear Canvas</span>
+            </button>
+          </>
         )}
       </div>
+
+      <AddBlockModal
+        open={isAddBlockModalOpen}
+        onOpenChange={setIsAddBlockModalOpen}
+      />
 
       <div
         className={cn(

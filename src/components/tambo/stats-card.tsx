@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useTamboStreamStatus } from "@tambo-ai/react";
+import { useSafeTamboStreamStatus } from "@/hooks/use-safe-tambo";
 import * as React from "react";
 import { z } from "zod/v3";
 import {
@@ -111,7 +111,8 @@ export const StatsCard = React.forwardRef<HTMLDivElement, StatsCardProps>(
     },
     ref,
   ) => {
-    const { streamStatus, propStatus } = useTamboStreamStatus<StatsCardProps>();
+    const { streamStatus, propStatus } =
+      useSafeTamboStreamStatus<StatsCardProps>();
 
     if (streamStatus.isPending) {
       return (
@@ -191,7 +192,7 @@ export const StatsCard = React.forwardRef<HTMLDivElement, StatsCardProps>(
               )}
             >
               {isPositiveChange ? "+" : ""}
-              {change.toFixed(1)}%
+              {(change ?? 0).toFixed(1)}%
             </span>
             <span className="text-muted-foreground">{changeLabel}</span>
           </div>

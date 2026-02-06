@@ -57,14 +57,26 @@ After fetching, analyze the response structure:
           .enum(["GET", "POST", "PUT", "DELETE"])
           .optional()
           .describe("HTTP method to use (defaults to GET)"),
-        headers: z
-          .record(z.string(), z.string())
+        authToken: z
+          .string()
           .optional()
-          .describe("Optional HTTP headers to include in the request"),
-        body: z
-          .record(z.string(), z.unknown())
+          .describe(
+            "Optional Bearer token for Authorization header (without 'Bearer ' prefix)",
+          ),
+        contentType: z
+          .enum([
+            "application/json",
+            "application/x-www-form-urlencoded",
+            "text/plain",
+          ])
           .optional()
-          .describe("Optional request body for POST/PUT requests"),
+          .describe("Content-Type header value (defaults to application/json)"),
+        bodyJson: z
+          .string()
+          .optional()
+          .describe(
+            "Optional JSON string for request body in POST/PUT requests. Must be valid JSON.",
+          ),
       })
       .describe("Parameters for fetching data from an API"),
     outputSchema: z.object({
@@ -105,7 +117,7 @@ export const components: TamboComponent[] = [
   {
     name: "DataTable",
     description:
-      "Use this component to display tabular data in rows and columns. Perfect for financial records, transaction history, user lists, inventory, API responses that return arrays of objects with consistent fields. Provide column definitions with keys matching the data object properties. Supports striped rows and compact mode for dense data.",
+      "Use this component to display tabular data in rows and columns. Perfect for financial records, transaction history, user lists, inventory. First define columns with key and label, then provide rows where each row has a cells array of string values matching the column order. Example: columns=[{key:'name',label:'Name'},{key:'amount',label:'Amount'}], rows=[{cells:['John','$100']},{cells:['Jane','$200']}]. Convert all values to strings.",
     component: DataTable,
     propsSchema: dataTableSchema,
   },

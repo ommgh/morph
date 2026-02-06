@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useTamboStreamStatus } from "@tambo-ai/react";
+import { useSafeTamboStreamStatus } from "@/hooks/use-safe-tambo";
 import * as React from "react";
 import { z } from "zod/v3";
 import {
@@ -108,7 +108,7 @@ export const MetricsList = React.forwardRef<HTMLDivElement, MetricsListProps>(
     ref,
   ) => {
     const { streamStatus, propStatus } =
-      useTamboStreamStatus<MetricsListProps>();
+      useSafeTamboStreamStatus<MetricsListProps>();
 
     if (streamStatus.isPending) {
       return (
@@ -236,7 +236,7 @@ export const MetricsList = React.forwardRef<HTMLDivElement, MetricsListProps>(
                           <Minus className="h-3 w-3" />
                         )}
                         {isPositiveChange ? "+" : ""}
-                        {metric.change!.toFixed(1)}%
+                        {(metric.change ?? 0).toFixed(1)}%
                       </span>
                     )}
                   </div>
@@ -279,7 +279,7 @@ export const MetricsList = React.forwardRef<HTMLDivElement, MetricsListProps>(
                         <Minus className="h-3 w-3" />
                       )}
                       {isPositiveChange ? "+" : ""}
-                      {metric.change!.toFixed(1)}%
+                      {(metric.change ?? 0).toFixed(1)}%
                     </span>
                   )}
                   <span

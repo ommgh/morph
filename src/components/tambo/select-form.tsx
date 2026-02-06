@@ -1,7 +1,10 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useTamboComponentState, useTamboStreamStatus } from "@tambo-ai/react";
+import {
+  useSafeTamboStreamStatus,
+  useSafeTamboComponentState,
+} from "@/hooks/use-safe-tambo";
 import * as React from "react";
 import { z } from "zod";
 
@@ -33,8 +36,8 @@ const toggleInArray = (arr: string[], item: string) =>
 export const SelectForm = React.forwardRef<HTMLDivElement, SelectFormProps>(
   ({ title = "", groups = [], mode = "multi" }, ref) => {
     const { streamStatus, propStatus } =
-      useTamboStreamStatus<SelectFormProps>();
-    const [selections, setSelections] = useTamboComponentState<Selections>(
+      useSafeTamboStreamStatus<SelectFormProps>();
+    const [selections, setSelections] = useSafeTamboComponentState<Selections>(
       "selections",
       {},
     );

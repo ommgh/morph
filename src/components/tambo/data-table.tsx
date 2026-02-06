@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useTamboStreamStatus } from "@tambo-ai/react";
+import { useSafeTamboStreamStatus } from "@/hooks/use-safe-tambo";
 import * as React from "react";
 import { z } from "zod/v3";
 
@@ -17,7 +17,7 @@ import { z } from "zod/v3";
  * Zod schema for DataTable column definition
  */
 const columnSchema = z.object({
-  key: z.string().describe("The key/property name in the data object"),
+  key: z.string().describe("Column identifier/header key"),
   label: z.string().describe("Display label for the column header"),
   align: z
     .enum(["left", "center", "right"])
@@ -26,14 +26,32 @@ const columnSchema = z.object({
 });
 
 /**
+ * Zod schema for a table row - array of cell values matching column order
+ */
+const rowSchema = z.object({
+  cells: z
+    .array(z.string())
+    .describe(
+      "Array of cell values as strings, in the same order as columns. Convert numbers, dates, and other values to strings.",
+    ),
+});
+
+/**
  * Zod schema for DataTable
+ * Uses explicit row/cell structure instead of dynamic record types
  */
 export const dataTableSchema = z.object({
   title: z.string().optional().describe("Optional title for the table"),
-  columns: z.array(columnSchema).describe("Column definitions for the table"),
-  data: z
-    .array(z.record(z.unknown()))
-    .describe("Array of data objects to display in the table"),
+  columns: z
+    .array(columnSchema)
+    .describe(
+      "Column definitions for the table headers. Define columns first, then provide row data matching this order.",
+    ),
+  rows: z
+    .array(rowSchema)
+    .describe(
+      "Array of row objects, each containing a cells array. Cell values must be strings and match the column order.",
+    ),
   caption: z.string().optional().describe("Optional table caption/description"),
   striped: z
     .boolean()
@@ -53,14 +71,14 @@ export const DataTable = React.forwardRef<HTMLDivElement, DataTableProps>(
     {
       title,
       columns = [],
-      data = [],
+      rows = [],
       caption,
       striped = false,
       compact = false,
     },
     ref,
   ) => {
-    const { streamStatus } = useTamboStreamStatus<DataTableProps>();
+    const { streamStatus } = useSafeTamboStreamStatus<DataTableProps>();
 
     if (streamStatus.isPending) {
       return (
@@ -75,19 +93,6 @@ export const DataTable = React.forwardRef<HTMLDivElement, DataTableProps>(
       );
     }
 
-    const formatValue = (value: unknown): React.ReactNode => {
-      if (value === null || value === undefined) return "—";
-      if (typeof value === "boolean") return value ? "Yes" : "No";
-      if (typeof value === "number") {
-        // Format numbers nicely
-        return value.toLocaleString();
-      }
-      if (typeof value === "object") {
-        return JSON.stringify(value);
-      }
-      return String(value);
-    };
-
     return (
       <div ref={ref} className="w-full rounded-lg border border-border bg-card">
         {title && (
@@ -98,9 +103,9 @@ export const DataTable = React.forwardRef<HTMLDivElement, DataTableProps>(
         <Table>
           <TableHeader>
             <TableRow>
-              {columns.map((col) => (
+              {columns.map((col, colIdx) => (
                 <TableHead
-                  key={col.key}
+                  key={col.key || colIdx}
                   className={cn(
                     col.align === "center" && "text-center",
                     col.align === "right" && "text-right",
@@ -112,33 +117,36 @@ export const DataTable = React.forwardRef<HTMLDivElement, DataTableProps>(
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.length === 0 ? (
+            {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={columns.length || 1}
                   className="text-center text-muted-foreground py-8"
                 >
                   No data available
                 </TableCell>
               </TableRow>
             ) : (
-              data.map((row, idx) => (
+              rows.map((row, rowIdx) => (
                 <TableRow
-                  key={idx}
-                  className={cn(striped && idx % 2 === 1 && "bg-muted/50")}
+                  key={rowIdx}
+                  className={cn(striped && rowIdx % 2 === 1 && "bg-muted/50")}
                 >
-                  {columns.map((col) => (
-                    <TableCell
-                      key={col.key}
-                      className={cn(
-                        compact && "py-1.5",
-                        col.align === "center" && "text-center",
-                        col.align === "right" && "text-right",
-                      )}
-                    >
-                      {formatValue(row[col.key])}
-                    </TableCell>
-                  ))}
+                  {(row?.cells ?? []).map((cell, cellIdx) => {
+                    const col = columns[cellIdx];
+                    return (
+                      <TableCell
+                        key={cellIdx}
+                        className={cn(
+                          compact && "py-1.5",
+                          col?.align === "center" && "text-center",
+                          col?.align === "right" && "text-right",
+                        )}
+                      >
+                        {cell ?? "—"}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             )}

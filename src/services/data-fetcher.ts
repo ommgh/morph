@@ -5,8 +5,12 @@
 export interface FetchDataParams {
   url: string;
   method?: "GET" | "POST" | "PUT" | "DELETE";
-  headers?: Record<string, string>;
-  body?: Record<string, unknown>;
+  authToken?: string;
+  contentType?:
+    | "application/json"
+    | "application/x-www-form-urlencoded"
+    | "text/plain";
+  bodyJson?: string;
 }
 
 export interface FetchDataResponse {
@@ -22,19 +26,30 @@ export interface FetchDataResponse {
 export const fetchData = async (
   params: FetchDataParams,
 ): Promise<FetchDataResponse> => {
-  const { url, method = "GET", headers = {}, body } = params;
+  const {
+    url,
+    method = "GET",
+    authToken,
+    contentType = "application/json",
+    bodyJson,
+  } = params;
 
   try {
-    const fetchOptions: RequestInit = {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        ...headers,
-      },
+    const headers: Record<string, string> = {
+      "Content-Type": contentType,
     };
 
-    if (body && method !== "GET") {
-      fetchOptions.body = JSON.stringify(body);
+    if (authToken) {
+      headers["Authorization"] = `Bearer ${authToken}`;
+    }
+
+    const fetchOptions: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (bodyJson && method !== "GET") {
+      fetchOptions.body = bodyJson;
     }
 
     const res = await fetch(url, fetchOptions);

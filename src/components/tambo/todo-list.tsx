@@ -3,7 +3,10 @@
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { useTamboComponentState, useTamboStreamStatus } from "@tambo-ai/react";
+import {
+  useSafeTamboStreamStatus,
+  useSafeTamboComponentState,
+} from "@/hooks/use-safe-tambo";
 import * as React from "react";
 import { z } from "zod/v3";
 import { Circle, CheckCircle2, Clock, AlertCircle } from "lucide-react";
@@ -64,8 +67,11 @@ const priorityIcons = {
  */
 export const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
   ({ title, items = [], showCompleted = true, interactive = true }, ref) => {
-    const { streamStatus, propStatus } = useTamboStreamStatus<TodoListProps>();
-    const [completedIds, setCompletedIds] = useTamboComponentState<string[]>(
+    const { streamStatus, propStatus } =
+      useSafeTamboStreamStatus<TodoListProps>();
+    const [completedIds, setCompletedIds] = useSafeTamboComponentState<
+      string[]
+    >(
       "completedIds",
       items.filter((item) => item.completed).map((item) => item.id),
     );

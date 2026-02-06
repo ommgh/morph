@@ -1,6 +1,5 @@
 "use client";
 import { useMcpServers } from "@/components/tambo/mcp-config-modal";
-import { MessageThreadFull } from "@/components/tambo/message-thread-full";
 import ComponentsCanvas from "@/components/dashboard/components-canvas";
 import { InteractableCanvasDetails } from "@/components/dashboard/interactable-canvas-details";
 import { InteractableTabs } from "@/components/dashboard/interactable-tabs";
@@ -70,10 +69,8 @@ export default function Home() {
       >
         <TamboMcpProvider>
           <div className="flex h-full overflow-hidden">
-            <div className="flex-1 overflow-hidden">
-              <MessageThreadFull />
-            </div>
-            <div className="hidden md:block w-[60%] overflow-auto">
+            {/* Canvas takes full width now that chat is hidden */}
+            <div className="w-full overflow-auto">
               {/* Tabs interactable manages tabs state only */}
               <InteractableTabs interactableId="Tabs" />
 

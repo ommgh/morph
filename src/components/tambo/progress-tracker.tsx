@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { useTamboStreamStatus } from "@tambo-ai/react";
+import { useSafeTamboStreamStatus } from "@/hooks/use-safe-tambo";
 import * as React from "react";
 import { z } from "zod/v3";
 import { CheckCircle2, Circle, Target } from "lucide-react";
@@ -62,7 +62,7 @@ export const ProgressTracker = React.forwardRef<
   ProgressTrackerProps
 >(({ title, items = [], showPercentage = true, variant = "default" }, ref) => {
   const { streamStatus, propStatus } =
-    useTamboStreamStatus<ProgressTrackerProps>();
+    useSafeTamboStreamStatus<ProgressTrackerProps>();
 
   if (streamStatus.isPending) {
     return (
@@ -100,9 +100,11 @@ export const ProgressTracker = React.forwardRef<
       )}
 
       <div className={cn("space-y-4", isCompact && "space-y-2")}>
-        {items.map((item, idx) => {
-          const percentage = Math.min((item.current / item.target) * 100, 100);
-          const isComplete = item.current >= item.target;
+        {(items ?? []).map((item, idx) => {
+          const current = item.current ?? 0;
+          const target = item.target ?? 1; // Avoid division by zero
+          const percentage = Math.min((current / target) * 100, 100);
+          const isComplete = current >= target;
           const color = item.color ?? "default";
 
           return (
@@ -123,10 +125,10 @@ export const ProgressTracker = React.forwardRef<
                       isComplete && "text-green-600 dark:text-green-400",
                     )}
                   >
-                    {item.current.toLocaleString()}
+                    {current.toLocaleString()}
                   </span>
                   <span className="mx-1">/</span>
-                  <span>{item.target.toLocaleString()}</span>
+                  <span>{target.toLocaleString()}</span>
                   {item.unit && <span className="ml-1">{item.unit}</span>}
                   {showPercentage && !isCompact && (
                     <span className="ml-2 text-xs">
@@ -146,7 +148,7 @@ export const ProgressTracker = React.forwardRef<
                   <span>
                     {isComplete
                       ? "Goal reached! 🎉"
-                      : `${(item.target - item.current).toLocaleString()} ${item.unit || "more"} to go`}
+                      : `${(target - current).toLocaleString()} ${item.unit || "more"} to go`}
                   </span>
                   {!isComplete && percentage >= 75 && (
                     <span className="text-orange-600 dark:text-orange-400">
