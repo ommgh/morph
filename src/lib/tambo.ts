@@ -9,14 +9,23 @@
  */
 
 import { Graph, graphSchema } from "@/components/tambo/graph";
-import { DataCard, dataCardSchema } from "@/components/tambo/card-data";
+import { SelectForm, selectFormSchema } from "@/components/tambo/select-form";
+import { DataTable, dataTableSchema } from "@/components/tambo/data-table";
+import { StatsCard, statsCardSchema } from "@/components/tambo/stats-card";
 import {
-  getCountryPopulations,
-  getGlobalPopulationTrend,
-} from "@/services/population-stats";
+  ProgressTracker,
+  progressTrackerSchema,
+} from "@/components/tambo/progress-tracker";
+import { TodoList, todoListSchema } from "@/components/tambo/todo-list";
+import {
+  MetricsList,
+  metricsListSchema,
+} from "@/components/tambo/metrics-list";
 import type { TamboComponent } from "@tambo-ai/react";
 import { TamboTool } from "@tambo-ai/react";
 import { z } from "zod";
+
+import { fetchData } from "@/services/data-fetcher";
 
 /**
  * tools
@@ -28,50 +37,45 @@ import { z } from "zod";
 
 export const tools: TamboTool[] = [
   {
-    name: "countryPopulation",
-    description:
-      "A tool to get population statistics by country with advanced filtering options",
-    tool: getCountryPopulations,
-    inputSchema: z.object({
-      continent: z.string().optional(),
-      sortBy: z.enum(["population", "growthRate"]).optional(),
-      limit: z.number().optional(),
-      order: z.enum(["asc", "desc"]).optional(),
+    name: "fetch_data",
+    description: `Fetch data from any API URL. Use this tool when the user wants to retrieve data from an external API or URL. 
+After fetching, analyze the response structure:
+- If the data is an array of objects with consistent keys, use DataTable to display it
+- If it's a single numeric value with context (like a count, amount, or score), use StatsCard
+- If it's an array of items with completion status or tasks, use TodoList
+- If it contains progress/goal data (current vs target values), use ProgressTracker
+- If it's an object with multiple key-value pairs (stats, usage, metrics), use MetricsList
+- If it contains time-series data or datasets suitable for visualization, use Graph
+- For user choices or selections needed, use SelectForm`,
+    tool: fetchData,
+    inputSchema: z
+      .object({
+        url: z
+          .string()
+          .describe("The full URL of the API endpoint to fetch from"),
+        method: z
+          .enum(["GET", "POST", "PUT", "DELETE"])
+          .optional()
+          .describe("HTTP method to use (defaults to GET)"),
+        headers: z
+          .record(z.string(), z.string())
+          .optional()
+          .describe("Optional HTTP headers to include in the request"),
+        body: z
+          .record(z.string(), z.unknown())
+          .optional()
+          .describe("Optional request body for POST/PUT requests"),
+      })
+      .describe("Parameters for fetching data from an API"),
+    outputSchema: z.object({
+      success: z.boolean(),
+      data: z.unknown(),
+      status: z.number(),
+      dataType: z.enum(["array", "object", "primitive"]),
+      itemCount: z.number().optional(),
+      keys: z.array(z.string()).optional(),
+      error: z.string().optional(),
     }),
-    outputSchema: z.array(
-      z.object({
-        countryCode: z.string(),
-        countryName: z.string(),
-        continent: z.enum([
-          "Asia",
-          "Africa",
-          "Europe",
-          "North America",
-          "South America",
-          "Oceania",
-        ]),
-        population: z.number(),
-        year: z.number(),
-        growthRate: z.number(),
-      }),
-    ),
-  },
-  {
-    name: "globalPopulation",
-    description:
-      "A tool to get global population trends with optional year range filtering",
-    tool: getGlobalPopulationTrend,
-    inputSchema: z.object({
-      startYear: z.number().optional(),
-      endYear: z.number().optional(),
-    }),
-    outputSchema: z.array(
-      z.object({
-        year: z.number(),
-        population: z.number(),
-        growthRate: z.number(),
-      }),
-    ),
   },
   // Add more tools here
 ];
@@ -87,16 +91,51 @@ export const components: TamboComponent[] = [
   {
     name: "Graph",
     description:
-      "A component that renders various types of charts (bar, line, pie) using Recharts. Supports customizable data visualization with labels, datasets, and styling options.",
+      "Use this when you want to display a chart. It supports bar, line, and pie charts. When you see data generally use this component. IMPORTANT: When asked to create a graph, always generate it first in the chat - do NOT add it directly to the canvas/dashboard. Let the user decide if they want to add it.",
     component: Graph,
     propsSchema: graphSchema,
   },
   {
-    name: "DataCard",
+    name: "SelectForm",
     description:
-      "A component that displays options as clickable cards with links and summaries with the ability to select multiple items.",
-    component: DataCard,
-    propsSchema: dataCardSchema,
+      "ALWAYS use this component instead of listing options as bullet points in text. Whenever you need to ask the user a question and would normally follow up with bullet points or numbered options, use this component instead. For yes/no or single-choice questions, use mode='single'. For questions where the user can select multiple options, use mode='multi' (default). Each group has a label (the question) and options (the choices). Examples: 'Would you like to continue?' with Yes/No options, or 'Which regions interest you?' with multiple region options.",
+    component: SelectForm,
+    propsSchema: selectFormSchema,
+  },
+  {
+    name: "DataTable",
+    description:
+      "Use this component to display tabular data in rows and columns. Perfect for financial records, transaction history, user lists, inventory, API responses that return arrays of objects with consistent fields. Provide column definitions with keys matching the data object properties. Supports striped rows and compact mode for dense data.",
+    component: DataTable,
+    propsSchema: dataTableSchema,
+  },
+  {
+    name: "StatsCard",
+    description:
+      "Use this component to display a single key metric or statistic prominently. Perfect for dashboards showing metrics like total revenue, active users, steps walked, calories burned, or any single important number. Supports change indicators (up/down arrows with percentages), icons, and status variants (success/warning/danger). Use when you have one primary value to highlight with optional comparison to a previous period.",
+    component: StatsCard,
+    propsSchema: statsCardSchema,
+  },
+  {
+    name: "ProgressTracker",
+    description:
+      "Use this component to display progress towards goals or targets. Perfect for fitness tracking (steps, calories, water intake), task completion percentages, quotas, or any scenario where you have current values vs target values. Shows progress bars with completion percentages. Use when data contains pairs of current/target values or goal-oriented metrics.",
+    component: ProgressTracker,
+    propsSchema: progressTrackerSchema,
+  },
+  {
+    name: "TodoList",
+    description:
+      "Use this component to display task lists, to-do items, or any list of actionable items. Perfect for task management, shopping lists, project checklists, or API responses containing items with completion status. Supports priorities (low/medium/high), due dates, categories, and interactive checkbox toggling. Use when data represents a list of tasks or items that can be marked as complete/incomplete.",
+    component: TodoList,
+    propsSchema: todoListSchema,
+  },
+  {
+    name: "MetricsList",
+    description:
+      "Use this component to display multiple key-value metrics in a list or grid format. Perfect for system stats, usage overview, API quota displays, account summaries, or any response with multiple related metrics. Supports icons, status indicators (warning/critical/success), change percentages, and different layout variants (list/grid/compact). Use when you have multiple related metrics to display together rather than individually.",
+    component: MetricsList,
+    propsSchema: metricsListSchema,
   },
   // Add more components here
 ];
